@@ -1,19 +1,20 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate from react-router-dom
-import './CSS/LawyerDashboard.css'; // Import the CSS file
+import { useLocation, useNavigate } from 'react-router-dom';
+import './CSS/LawyerDashboard.css';
 
-const LawyeDashboard = () => {
-    const navigate = useNavigate(); // Initialize the navigate function
+const LawyerDashboard = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const handleButtonClick = () => {
-        navigate('/file-management'); // Navigate to the File Management page
-
-       
+        navigate('/file-management');
     };
 
     const handleFindCaseClick = () => {
         navigate('/fetch-file');
     };
+
+    const lawyerName = location.state?.name || 'Adv. Aniket Deshmukh';
 
     return (
         <div className="container">
@@ -22,7 +23,7 @@ const LawyeDashboard = () => {
                 alt="register-law" 
                 className="image" 
             />
-            <div className="darkcover"> {/* Dark overlay */}
+            <div className="darkcover">
                 <div className="box">
                     <div className="header">YOU ARE A REGISTERED LAWYER</div>
                     <div className="logo">
@@ -33,24 +34,23 @@ const LawyeDashboard = () => {
                         />
                     </div>
                     <div className="dets">
-                        Adv. Aniket Deshmukh<br></br>
-                        aniket.deshmukh@example.com<br></br>
+                        {lawyerName}<br />
+                        example.lawyer@example.com<br />
                         Registration No.: MAH/12345/2024
                     </div>
                     <div id="speciality">Civil Law & Property Disputes</div>
                     <div className="registerandfetchbuttons">
-                    <button onClick={handleButtonClick} className="registercase"> {/* Button for navigation */}
-                    Register a New Case
-                </button>
-                <button onClick={handleFindCaseClick} className="fetchcase"> {/* Button for navigation */}
-                    Find a Case
-                </button>
+                        <button onClick={handleButtonClick} className="registercase">
+                            Register a New Case
+                        </button>
+                        <button onClick={handleFindCaseClick} className="fetchcase">
+                            Find a Case
+                        </button>
                     </div>
-                    
                 </div>
             </div>
         </div>
     );
 };
 
-export default LawyeDashboard;
+export default LawyerDashboard;

@@ -1,144 +1,194 @@
-const express = require('express'); // Import express for building the server
-const multer = require('multer'); // Import multer for handling file uploads
-const path = require('path'); // Import path for handling file paths
-const fs = require('fs'); // Import fs for file system operations
-const cors = require('cors'); // Import cors for enabling CORS
-const { uploadToPinata, storeHashInContract } = require('../scripts/pinataIntegration'); // Import functions for Pinata interaction
-const { ethers } = require("hardhat"); // Import ethers for contract interaction
-require("dotenv").config(); // Load environment variables
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const cors = require('cors');
+const { uploadToPinata, storeHashInContract } = require('../scripts/pinataIntegration');
+const { ethers } = require("hardhat");
+const { exec } = require('child_process');
+require("dotenv").config();
 
 const app = express();
-const upload = multer({ dest: 'uploads/' }); // Specify the directory for storing uploaded files
+const upload = multer({ dest: 'uploads/' });
 
-// Enable CORS for all routes
+// Enable CORS
 app.use(cors());
 
-// In-memory storage for metadata (you can switch to a database for persistent storage)
-let fileMetadata = {}; // Initialize an object to store file metadata
+// In-memory storage
+let fileMetadata = {};
+let scriptExecuted = false;  // For Lawyers
+let clientScriptExecuted = false;  // For Clients
+let users = [];  // Store registered users
 
-// Middleware to handle JSON parsing for linkedClients
+// Middleware for JSON parsing
 app.use(express.json());
 
-// Endpoint to handle file upload
+/** ================= Lawyer Registration Flow ================= */
+
+// Execute `addCourtOfficial.js` script
+app.post('/executeScript', async (req, res) => {
+    const { lawyerSelected } = req.body;
+
+    if (!lawyerSelected) {
+        return res.status(400).json({ message: 'Lawyer must be selected before proceeding.' });
+    }
+
+    try {
+        const scriptPath = path.resolve(__dirname, '../scripts/addCourtOfficial.js');
+        
+        exec(`node ${scriptPath}`, (error, stdout, stderr) => {
+            if (error || stderr) {
+                console.error(`Error executing script: ${error?.message || stderr}`);
+                return res.status(500).json({ message: 'Error executing the script.' });
+            }
+
+            console.log(`stdout: ${stdout}`);
+            scriptExecuted = true;
+            res.status(200).json({ message: 'Script executed successfully', output: stdout });
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error executing the script.', error: error.message });
+    }
+});
+
+// Enter Ethereum address for lawyer
+app.post('/enterAddress', async (req, res) => {
+    const { address } = req.body;
+
+    if (!scriptExecuted) {
+        return res.status(400).json({ message: 'Execute script first before entering Ethereum address.' });
+    }
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
+        return res.status(400).json({ message: 'Invalid Ethereum address format.' });
+    }
+
+    res.status(200).json({ message: 'Ethereum address received successfully.', address });
+});
+
+/** ================= Client Registration Flow ================= */
+
+// Execute `addClient.js` script
+app.post('/executeClientScript', async (req, res) => {
+    const { clientSelected } = req.body;
+
+    if (!clientSelected) {
+        return res.status(400).json({ message: 'Client must be selected before proceeding.' });
+    }
+
+    try {
+        const scriptPath = path.resolve(__dirname, '../scripts/addClient.js');
+        
+        exec(`node ${scriptPath}`, (error, stdout, stderr) => {
+            if (error || stderr) {
+                console.error(`Error executing script: ${error?.message || stderr}`);
+                return res.status(500).json({ message: 'Error executing the script.' });
+            }
+
+            console.log(`stdout: ${stdout}`);
+            clientScriptExecuted = true;
+            res.status(200).json({ message: 'Script executed successfully', output: stdout });
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error executing the script.', error: error.message });
+    }
+});
+
+// Enter Ethereum address for client
+app.post('/enterClientAddress', async (req, res) => {
+    const { address } = req.body;
+
+    if (!clientScriptExecuted) {
+        return res.status(400).json({ message: 'Execute script first before entering Ethereum address.' });
+    }
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
+        return res.status(400).json({ message: 'Invalid Ethereum address format.' });
+    }
+
+    res.status(200).json({ message: 'Ethereum address received successfully.', address });
+});
+
+/** ================= File Upload & Retrieval ================= */
+
+// Handle file uploads
 app.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Access metadata from req.body
     const { title, dateOfJudgment, caseNumber, category, judgeName, linkedClients } = req.body;
-
-    console.log('Uploaded file:', req.file);
-    console.log('Metadata:', { title, dateOfJudgment, caseNumber, category, judgeName, linkedClients });
-
     try {
-        // Upload the file to Pinata
-        const fileStream = fs.createReadStream(req.file.path); // Read the uploaded file
-        const ipfsHash = await uploadToPinata(fileStream, req.file.originalname); // Upload to Pinata
-        console.log("Uploaded to Pinata. IPFS Hash:", ipfsHash);
-        
-        // Ensure linkedClients is an array
-        const clientsArray = Array.isArray(linkedClients) ? linkedClients : JSON.parse(linkedClients || "[]");
+        const fileStream = fs.createReadStream(req.file.path);
+        const ipfsHash = await uploadToPinata(fileStream, req.file.originalname);
 
-        // Store the IPFS hash in the smart contract
+        const clientsArray = Array.isArray(linkedClients) ? linkedClients : JSON.parse(linkedClients || "[]");
         await storeHashInContract(ipfsHash, title, dateOfJudgment, caseNumber, category, judgeName, clientsArray);
 
-        // Store metadata in the in-memory object using the filename as the key
-        fileMetadata[req.file.filename] = {
-            title,
-            dateOfJudgment,
-            caseNumber,
-            category,
-            judgeName,
-            linkedClients: clientsArray, // Store as an array
-            uploader: req.file.originalname,
-            timestamp: new Date(),
-            ipfsHash // Store the IPFS hash for easy retrieval
+        fileMetadata[title] = {
+            title, dateOfJudgment, caseNumber, category, judgeName, linkedClients: clientsArray,
+            uploader: req.file.originalname, timestamp: new Date(), ipfsHash
         };
 
-        res.json({
-            message: 'File uploaded successfully',
-            file: req.file,
-            ipfsHash, // Include the IPFS hash in the response
-            metadata: fileMetadata[req.file.filename] // Return stored metadata
-        });
+        res.json({ message: 'File uploaded successfully', file: req.file, ipfsHash, metadata: fileMetadata[title] });
     } catch (error) {
-        console.error("Error during upload and storage process:", error);
         res.status(500).json({ message: 'Error processing the upload', error: error.message });
     } finally {
-        // Clean up the uploaded file
-        fs.unlink(req.file.path, (err) => {
-            if (err) console.error(`Error deleting file: ${err}`);
-        });
+        fs.unlink(req.file.path, err => err && console.error(`Error deleting file: ${err}`));
     }
 });
 
-// Endpoint to retrieve all uploaded case files
+// Retrieve all case files
 app.get('/files', async (req, res) => {
     const [deployer] = await ethers.getSigners();
-    console.log("Fetching case files with the account:", deployer.address);
-
     const NavinEvault = await ethers.getContractFactory("NavinEvault");
     const contract = await NavinEvault.attach(process.env.NAVINEVAULT_CONTRACT_ADDRESS);
 
     try {
         const totalFiles = await contract.totalCaseFiles();
-        console.log(`Total case files: ${totalFiles.toString()}`);
-
-        if (totalFiles.isZero()) {
-            return res.status(404).json({ message: "No case files exist." });
-        }
+        if (totalFiles.isZero()) return res.status(404).json({ message: "No case files exist." });
 
         const allCaseFiles = [];
-
         for (let i = 1; i <= totalFiles; i++) {
             const caseFile = await contract.getFile(i);
-            const caseFileData = {
-                caseNumber: caseFile.caseNumber.toString(),
-                title: caseFile.title || "N/A",
-                ipfsHash: caseFile.ipfsHash || null,
-                dateOfJudgment: caseFile.dateOfJudgment || "N/A",
-                category: caseFile.category || "N/A",
-                judgeName: caseFile.judgeName || "N/A",
-                linkedClients: caseFile.linkedClients || [],
-                metadata: {
-                    uploader: caseFile.uploader || "N/A",
-                    timestamp: caseFile.timestamp.toString() || "N/A"
+            allCaseFiles.push({
+                caseNumber: caseFile.caseNumber.toString(), title: caseFile.title || "N/A",
+                ipfsHash: caseFile.ipfsHash || null, dateOfJudgment: caseFile.dateOfJudgment || "N/A",
+                category: caseFile.category || "N/A", judgeName: caseFile.judgeName || "N/A",
+                linkedClients: caseFile.linkedClients || [], metadata: {
+                    uploader: caseFile.uploader || "N/A", timestamp: caseFile.timestamp.toString() || "N/A"
                 }
-            };
-
-            allCaseFiles.push(caseFileData);
+            });
         }
 
-        res.json({
-            message: 'Case files retrieved successfully',
-            files: allCaseFiles
-        });
+        res.json({ message: 'Case files retrieved successfully', files: allCaseFiles });
     } catch (error) {
-        console.error("Error retrieving case files:", error);
         res.status(500).json({ message: 'Error fetching case files', error: error.message });
     }
 });
 
-// Endpoint to retrieve file metadata by filename
-app.get('/metadata/:filename', (req, res) => {
-    const filename = req.params.filename;
-
-    // Retrieve metadata for the specified file
-    const metadata = fileMetadata[filename];
-
-    if (metadata) {
-        res.json({
-            message: 'Metadata retrieved successfully',
-            metadata
-        });
-    } else {
-        res.status(404).json({ message: 'Metadata not found for the specified file' });
-    }
+// Retrieve file metadata by title
+app.get('/metadata/:title', (req, res) => {
+    const metadata = fileMetadata[req.params.title];
+    metadata ? res.json({ message: 'Metadata retrieved successfully', metadata }) :
+        res.status(404).json({ message: `Metadata not found for title: ${req.params.title}` });
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000; // Use the specified PORT or default to 5000
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+/** ================= User Management ================= */
+
+// Add a new user (Lawyer or Client)
+app.post('/addUser', async (req, res) => {
+    const { name, userType, address } = req.body;
+
+    if (!name || !userType) return res.status(400).json({ message: 'Name and user type are required.' });
+
+    const existingUser = users.find(user => user.address === address);
+    if (existingUser) return res.status(400).json({ message: 'This Ethereum address is already registered.' });
+
+    users.push({ name, userType, address: address || null });
+    res.status(200).json({ success: true, message: 'User added successfully.' });
 });
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

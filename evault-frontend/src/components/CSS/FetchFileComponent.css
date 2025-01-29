@@ -1,121 +1,86 @@
-/* Container styles */
 .fetch-container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    position: relative;
-    z-index: 1; /* Ensure it appears above the overlay */
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-/* Background image container */
-.background-image {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('../../../public/fetch-files.jpg'); /* Make sure the image path is correct */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    z-index: -1;
+.search-input {
+  width: 300px; /* Adjust width as needed */
+  padding: 10px;
+  margin-right: 10px;
+  font-size: 16px;
 }
 
-/* Overlay layer */
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.4); /* Reduced opacity for a lighter overlay */
-    z-index: 1; /* Lower z-index than the fetch-container */
+.fetch-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
 }
 
-/* Main heading */
-.main-heading {
-    text-align: center;
-    font-size: 2.5em; /* Increased font size */
-    font-weight: bold; /* Added bold weight */
-    color: #FFFFFF; /* Bright white */
-    margin-top: 50px;
-    margin-bottom: 20px;
-    z-index: 1000;
-    animation: fadeIn 1s ease; /* Add fade-in animation */
+.fetch-button:hover {
+  background-color: #45a049;
 }
 
-/* Flex container for input and button */
-.fetch-input-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 15px;
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
 }
 
-/* Input field */
-.fetch-input-button input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1em;
-    margin-right: 10px;
-}
-
-/* Button styles */
-.fetch-input-button button {
-    padding: 10px 15px;
-    font-size: 1em;
-    color: #fff;
-    background-color: #EC6A00;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.fetch-input-button button:hover {
-    background-color: #d95f00; /* Change hover color for better effect */
-}
-
-/* Error message */
-.fetch-container p {
-    color: red;
-    font-weight: bold;
-}
-
-/* Metadata display */
 .metadata-container {
-    text-align: left;
-    margin-top: 20px;
-    padding: 15px;
-    background-color: #e9ecef;
-    border-radius: 5px;
-    height: 300px;
-    
+  margin-top: 20px;
 }
 
 .metadata-container h3 {
-    color: #000000;
-    font-size: 1.5em;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
-.metadata-container strong {
-    color: #333;
+.password-section {
+  margin-top: 20px;
 }
 
-.metadata-container a {
-    color: #007bff;
-    text-decoration: none;
-    transition: color 0.3s ease;
+.password-input {
+  width: 300px;
+  padding: 10px;
+  margin-right: 10px;
+  font-size: 16px;
 }
 
-.metadata-container a:hover {
-    color: #0056b3;
+.verify-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.verify-button:hover {
+  background-color: #45a049;
+}
+
+.background-image {
+ background-image: url('../../../public/fetch-files.jpg'); /* Make sure the image path is correct */
+  background-size: cover;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.overlay {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 50px;
+}
+
+.main-heading {
+  color: white;
+  text-align: center;
+  font-size: 2em;
+  margin-bottom: 30px;
 }

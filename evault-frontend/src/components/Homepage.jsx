@@ -1,12 +1,12 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate from react-router-dom
-import './CSS/Homepage.css'; // Import the CSS file
+import { useNavigate } from 'react-router-dom';
+import './CSS/Homepage.css';
 
 const Homepage = () => {
-    const navigate = useNavigate(); // Initialize the navigate function
+    const navigate = useNavigate();
 
     const handleButtonClick = () => {
-        navigate('/laywer-dashboard'); // Navigate to the File Management page
+        navigate('/auth'); // Navigate to the Auth Page
     };
 
     return (
@@ -16,9 +16,9 @@ const Homepage = () => {
                 alt="homepage-law" 
                 className="image" 
             />
-            <div className="darkcover"> {/* Dark overlay */}
+            <div className="darkcover">
                 <div className="title">BLOCKCHAIN BASED e-VAULT</div>
-                <button onClick={handleButtonClick} className="button"> {/* Button for navigation */}
+                <button onClick={handleButtonClick} className="button">
                     GET STARTED
                 </button>
             </div>
